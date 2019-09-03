@@ -2,8 +2,9 @@
 #include <nRF24L01.h>
 #include <RF24.h>
 #include <Button.h>
-#define TRIG_BUTTON 4
-#define RF_COMMAND 'P'
+#define TRIG_BUTTON 3
+#define RF_COMMAND_1 '1'
+#define RF_COMMAND_2 '2'
 
 Button triggerButton(TRIG_BUTTON); // Connect your button between TRIG_BUTTON and GND
 RF24 radio(7, 8); // CE, CSN
@@ -18,7 +19,7 @@ void setup() {
 }
 void loop() {
   if (triggerButton.pressed()) {
-    char command = RF_COMMAND;
+    char command = RF_COMMAND_2;
     radio.write(&command, sizeof(command));
     Serial.println("Sent command");
   }
