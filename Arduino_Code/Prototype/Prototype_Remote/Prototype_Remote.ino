@@ -19,7 +19,7 @@ void setup() {
 }
 void loop() {
   if (triggerButton.pressed()) {
-    char command = RF_COMMAND_2;
+    char command = RF_COMMAND_1;
     radio.write(&command, sizeof(command));
     Serial.println("Sent command");
   }
