@@ -1,14 +1,16 @@
 #include <Wire.h>
 #include <ADXL345.h>
 
-ADXL345 adxl; //variable adxl is an instance of the ADXL345 library
-int x, y, z;
-int x_sample, y_sample, z_sample;
-
-
 /*Macros*/
-#define SAMPLES 50
-#define MAX_THRESHOLD 50 // max change limit
+#define SAMPLES 20
+#define MAX_THRESHOLD 50 // max change limit to be considered shaking
+ADXL345 adxl; //variable adxl is an instance of the ADXL345 library
+
+int x, y, z;
+int x_prev, y_prev, z_prev;
+int averageAcc_Arr[SAMPLES] = {0};
+int currentAcc_Index = 0;
+
 
 void setup() {
   Serial.begin(9600);
@@ -28,63 +30,64 @@ void setup() {
     adxl.setInactivityX(1);
     adxl.setInactivityY(1);
     adxl.setInactivityZ(1);
-  }
-  for (int i = 0; i < SAMPLES; i++) {
+
+    adxl.readXYZ(&x_prev, &y_prev, &z_prev);
     adxl.readXYZ(&x, &y, &z); //read the accelerometer values and store them in variables  x,y,z
-    x_sample += x;
-    y_sample += y;
-    z_sample += z;
+    int xDiff = x_prev - x; // finding change in x
+    int yDiff = y_prev - y; // finding change in y
+    int zDiff = z_prev - z; // finding change in z
+    int len = sizeof(averageAcc_Arr, averageAcc_Arr[0]);
+    for (int i = 0; i < len; i++) {
+      averageAcc_Arr[i] = getShakingIntensity(xDiff, yDiff, zDiff);
+    }
   }
-  x_sample /= SAMPLES;
-  y_sample /= SAMPLES;
-  z_sample /= SAMPLES;
 
 }
 
 void loop() {
-  updateAverage();
   adxl.readXYZ(&x, &y, &z); //read the accelerometer values and store them in variables  x,y,z
-  int xDiff = x_sample - x; // finding change in x
-  int yDiff = y_sample - y; // finding change in y
-  int zDiff = z_sample - z; // finding change in z
+  int xDiff = x_prev - x; // finding change in x
+  int yDiff = y_prev - y; // finding change in y
+  int zDiff = z_prev - z; // finding change in z
 
   /*    Printing out x, y, z coordinates value              */
   // Serial.print("X: "); Serial.print(x); Serial.print("  ");
   // Serial.print("Y: "); Serial.print(y); Serial.print("  ");
   // Serial.print("Z: "); Serial.print(z); Serial.print("  ");
-  
+
+  int currentIntensity = getShakingIntensity(xDiff, yDiff, zDiff);
+  int averageIntensity = getMovingAverage(currentIntensity);
   double roll = atan(y / sqrt(pow(x, 2) + pow(z, 2))) * 180 / PI;         // rotation around X-Axis
   double pitch = atan(-1 * x / sqrt(pow(y, 2) + pow(z, 2))) * 180 / PI;   // rotation around Y-Axis
-  Serial.print("Intensity: "); Serial.print(intensity); Serial.print(" ");
+  Serial.print("Intensity: "); Serial.print(averageIntensity); Serial.print(" ");
   Serial.print("Roll: "); Serial.print(roll); Serial.print(" ");
   Serial.print("Pitch: "); Serial.print(pitch); Serial.print(" ");
   Serial.println();
+
+  x_prev = x;
+  y_prev = y;
+  z_prev = z;
 }
 
-void updateAverage() {
-  adxl.readXYZ(&x, &y, &z); //read the accelerometer values and store them in variables  x,y,z
-  x_sample += x;
-  y_sample += y;
-  z_sample += z;
-  x_sample /= 2;
-  y_sample /= 2;
-  z_sample /= 2;
+int getShakingIntensity(int xDiff, int yDiff, int zDiff) {
+  int intensity = 0;
+  intensity += (abs(xDiff) + abs(yDiff) + abs(zDiff));
+  return intensity;
+}
+
+bool isShaking(int xDiff, int yDiff, int zDiff) {
+  return (abs(xDiff) + abs(yDiff) + abs(zDiff)) > MAX_THRESHOLD;
 }
 
 
-int shakingIntensity(int xDiff, int yDiff, int zDiff){
-    int intensity = 0;
-    if (isShaking)
-    {
-//      Serial.println("Shaking Detected");
-      intensity += (abs(xDiff)+ abs(yDiff) + abs(zDiff));
-//      Serial.print("Intensity");
-//      Serial.print("\t");
-//      Serial.println(intensity);
-    }
-    return intensity;
-}
-
-bool isShaking(int xDiff, int yDiff, int zDiff){
-  return (abs(xDiff)+ abs(yDiff) + abs(zDiff)) > MAX_THRESHOLD;
+int getMovingAverage(int currentIntensity) {
+  int len = sizeof(averageAcc_Arr) / sizeof(averageAcc_Arr[0]);
+  averageAcc_Arr[currentAcc_Index] = currentIntensity;
+  int sum = 0;
+  for (int i = 0; i < len; i++) {
+    sum += averageAcc_Arr[i];
+  }
+  // update currentAcc_Index
+  currentAcc_Index = currentAcc_Index >= len ? 0 : currentAcc_Index + 1;
+  return sum / len;
 }
