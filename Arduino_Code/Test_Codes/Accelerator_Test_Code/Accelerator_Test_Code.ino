@@ -12,7 +12,6 @@ int x_sample, y_sample, z_sample;
 
 void setup() {
   Serial.begin(9600);
-  //pinMode(A2, OUTPUT);
   // Accelerometer calibration:
   {
     adxl.powerOn();
@@ -53,15 +52,13 @@ void loop() {
   // Serial.print("X: "); Serial.print(x); Serial.print("  ");
   // Serial.print("Y: "); Serial.print(y); Serial.print("  ");
   // Serial.print("Z: "); Serial.print(z); Serial.print("  ");
-
-  int intensity = shakingIntensity(xDiff, yDiff, zDiff);
+  
   double roll = atan(y / sqrt(pow(x, 2) + pow(z, 2))) * 180 / PI;         // rotation around X-Axis
   double pitch = atan(-1 * x / sqrt(pow(y, 2) + pow(z, 2))) * 180 / PI;   // rotation around Y-Axis
   Serial.print("Intensity: "); Serial.print(intensity); Serial.print(" ");
-//  Serial.print("Roll: "); Serial.print(roll); Serial.print(" ");
-//  Serial.print("Pitch: "); Serial.print(pitch); Serial.print(" ");
+  Serial.print("Roll: "); Serial.print(roll); Serial.print(" ");
+  Serial.print("Pitch: "); Serial.print(pitch); Serial.print(" ");
   Serial.println();
-  //analogWrite(A2, map(intensity, 0, 1000, 0, 255));
 }
 
 void updateAverage() {
@@ -90,4 +87,4 @@ int shakingIntensity(int xDiff, int yDiff, int zDiff){
 
 bool isShaking(int xDiff, int yDiff, int zDiff){
   return (abs(xDiff)+ abs(yDiff) + abs(zDiff)) > MAX_THRESHOLD;
-} 
+}
