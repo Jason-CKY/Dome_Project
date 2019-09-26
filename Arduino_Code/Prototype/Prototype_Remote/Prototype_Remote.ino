@@ -2,12 +2,16 @@
 #include <nRF24L01.h>
 #include <RF24.h>
 #include <Button.h>
-#define TRIG_BUTTON 3
+#define TRIG_BUTTON_1     2
+#define TRIG_BUTTON_2     9
 #define RF_COMMAND_1 '1'
 #define RF_COMMAND_2 '2'
 
-Button triggerButton(TRIG_BUTTON); // Connect your button between TRIG_BUTTON and GND
-RF24 radio(7, 8); // CE, CSN
+Button triggerButton_1(TRIG_BUTTON_1); // Connect your button between TRIG_BUTTON and GND
+Button triggerButton_2(TRIG_BUTTON_2);
+#define RF_CE             7
+#define RF_CSN            8
+RF24 radio(RF_CE, RF_CSN); // CE, CSN
 const byte address[6] = "00001";
 
 /* accelerator initialisation */
@@ -15,8 +19,8 @@ const byte address[6] = "00001";
 #include <ADXL345.h>
 
 
-#define SAMPLES 20
-#define MAX_THRESHOLD 50 // max change limit to be considered shaking
+#define SAMPLES           20
+#define MAX_THRESHOLD     50 // max change limit to be considered shaking
 ADXL345 adxl; //variable adxl is an instance of the ADXL345 library
 
 int x, y, z;
@@ -25,10 +29,17 @@ int averageAcc_Arr[SAMPLES] = {0};
 int currentAcc_Index = 0;
 
 /* vibration motor initialisation */
-#define VIBRATION_MOTOR 4
-#define VIBRATION_DURATION 500
+#define VIBRATION_MOTOR     10
+#define VIBRATION_DURATION  500
 unsigned long previousMillis = 0;
 int vibrationState = LOW;
+
+
+/* RGB LED setup */
+#define LED_R 3
+#define LED_G 5 
+#define LED_B 6
+
 
 void setup() {
   Serial.begin(9600);
@@ -39,7 +50,8 @@ void setup() {
     radio.openWritingPipe(address);
     radio.setPALevel(RF24_PA_MIN);
     radio.startListening();
-    triggerButton.begin();
+    triggerButton_1.begin();
+    triggerButton_2.begin();
   }
 
   // Accelerometer calibration:
@@ -74,10 +86,11 @@ void setup() {
 void loop() {
   /* Scanning for any received RF Message from mega */
   if(radio.available()){
-    char command;
-    radio.read(&command, sizeof(command));
-    Serial.print("Received: "); Serial.println(command);
-    vibrateDuration(previousMillis, VIBRATION_DURATION, vibrationState);
+    char text[32] = "";
+    radio.read(&text, sizeof(text));
+    Serial.println(text);
+    vibrationState = HIGH;
+    previousMillis = millis();
   }
   /* Accelerator calculations */
   {
@@ -90,10 +103,10 @@ void loop() {
     int averageIntensity = getMovingAverage(currentIntensity, averageAcc_Arr, &currentAcc_Index);
     double roll = atan(y / sqrt(pow(x, 2) + pow(z, 2))) * 180 / PI;         // rotation around X-Axis
     double pitch = atan(-1 * x / sqrt(pow(y, 2) + pow(z, 2))) * 180 / PI;   // rotation around Y-Axis
-    Serial.print("Intensity: "); Serial.print(averageIntensity); Serial.print(" ");
-    Serial.print("Roll: "); Serial.print(roll); Serial.print(" ");
-    Serial.print("Pitch: "); Serial.print(pitch); Serial.print(" ");
-    Serial.println();
+//    Serial.print("Intensity: "); Serial.print(averageIntensity); Serial.print(" ");
+//    Serial.print("Roll: "); Serial.print(roll); Serial.print(" ");
+//    Serial.print("Pitch: "); Serial.print(pitch); Serial.print(" ");
+//    Serial.println();
 
     x_prev = x;
     y_prev = y;
@@ -101,28 +114,29 @@ void loop() {
   }
 
   /* Send status of remote to the mega */
-  if (triggerButton.pressed()) {
-    sendRFMessage(RF_COMMAND_1);
-  }
-}
-
-void sendRFMessage(char msg){
-  radio.stopListening();
-  radio.write(&msg, sizeof(msg));
-  Serial.print("sent 0x"); Serial.print(msg, HEX);
-  Serial.println();
-  radio.startListening();
-}
-
-void vibrateDuration(unsigned long prevTime, unsigned long duration, int vibrationState){
-  if(vibrationState == HIGH &&  millis() - prevTime >= duration){
-    prevTime = millis();
-    vibrationState = LOW;
-  }else if(vibrationState == LOW){
+  if (triggerButton_1.pressed()) {
+    radio.stopListening();
+    const char text[] = "Hello World";
+    radio.write(&text, sizeof(text));
+    radio.startListening();
+    Serial.print("Sending: "); Serial.println(text);
     vibrationState = HIGH;
+    previousMillis = millis();
+  }
+
+  if(vibrationState == HIGH && millis() - previousMillis > VIBRATION_DURATION){
+    vibrationState = LOW;
   }
   digitalWrite(VIBRATION_MOTOR, vibrationState);
 }
+
+//void sendRFMessage(char msg){
+//  radio.stopListening();
+//  radio.write(&msg, sizeof(msg));
+//  Serial.print("sent 0x"); Serial.print(msg, HEX);
+//  Serial.println();
+//  radio.startListening();
+//}
 
 int getShakingIntensity(int xDiff, int yDiff, int zDiff) {
   int intensity = 0;
