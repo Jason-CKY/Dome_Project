@@ -25,74 +25,101 @@ void setup() {
   pinMode(YELLOW, OUTPUT);
   pinMode(ORANGE, OUTPUT);
   pinMode(BLUE, OUTPUT);
-
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  lightUpWhenCorrect();     // detect if remote is placed in correct order and light up relevant LED if correct
+  lightUpWhenReturn();     // detect if remote is placed in back and light up relevant LED if correct
+  Serial.println("loop");
 }
 
+void lightUpWhenReturn() {
+  int reading1 = analogRead(GREEN_INPUT);
+  int reading2 = analogRead(YELLOW_INPUT);
+  int reading3 = analogRead(ORANGE_INPUT);
+  int reading4 = analogRead(BLUE_INPUT);
+  //for the 4 readings
+  Serial.println(reading1);
+  Serial.println(reading2);
+  Serial.println(reading3);
+  Serial.println(reading4);
 
-void lightUpWhenCorrect() {
+  //create array
+  int lightup[4] = {0};
 
-  int green_reading = analogRead(GREEN_INPUT);
-  int yellow_reading = analogRead(YELLOW_INPUT);
-  int orange_reading = analogRead(ORANGE_INPUT);
-  int blue_reading = analogRead(BLUE_INPUT);
-  
-  
-  // Debug lines
-  {
-    Serial.print("Green reading = "); Serial.print(green_reading); Serial.print(" ");
-    Serial.print("Yellow reading = "); Serial.print(yellow_reading); Serial.print(" ");
-    Serial.print("Orange reading = "); Serial.print(orange_reading); Serial.print(" ");
-    Serial.print("Blue reading = "); Serial.print(blue_reading); Serial.print(" ");
-    Serial.println();
-  }
-  
-  if (isCorrectInput(GREEN, green_reading)) {
-    // light up green led
-    digitalWrite(GREEN, HIGH);
-  } else if (!isCorrectInput(GREEN, green_reading)) {
-    // don't light up green led
-    digitalWrite(GREEN, LOW);
-  }
+  if(checkInput(reading1) == GREEN){
+    lightup[0]= 1;
+  } else if (checkInput(reading1) == YELLOW){
+    lightup[1] = 1 ;
+  }else if (checkInput(reading1) == ORANGE){
+    lightup[2] = 1;
+  } else if (checkInput(reading1) == BLUE){
+    lightup[3] = 1;
+  } 
 
-  if (isCorrectInput(YELLOW, yellow_reading)) {
-    // light up yellow led
-    digitalWrite(YELLOW, HIGH);
-  } else if (!isCorrectInput(YELLOW, yellow_reading)) {
-    // don't light up yellow led
-    digitalWrite(YELLOW, LOW);
-  }
+  if(checkInput(reading2) == GREEN){
+    lightup[0]= 1;
+  } else if (checkInput(reading2) == YELLOW){
+    lightup[1] = 1 ;
+  }else if (checkInput(reading2) == ORANGE){
+    lightup[2] = 1;
+  } else if (checkInput(reading2) == BLUE){
+    lightup[3] = 1;
+  } 
 
-  if (isCorrectInput(ORANGE, orange_reading)) {
-    // light up orange led
-    digitalWrite(ORANGE, HIGH);
-  } else if (!isCorrectInput(ORANGE, orange_reading)) {
-    // don't light up orange led
-    digitalWrite(ORANGE, LOW);
-  }
+  if(checkInput(reading3) == GREEN){
+    lightup[0]= 1;
+  } else if (checkInput(reading3) == YELLOW){
+    lightup[1] = 1 ;
+  }else if (checkInput(reading3) == ORANGE){
+    lightup[2] = 1;
+  } else if (checkInput(reading3) == BLUE){
+    lightup[3] = 1;
+  } 
 
-  if (isCorrectInput(BLUE, blue_reading)) {
-    // light up blue led
-    digitalWrite(BLUE, HIGH);
-  } else if (!isCorrectInput(BLUE, blue_reading)) {
-    // don't light up yellow led
-    digitalWrite(BLUE, LOW);
-  }
-  
+  if(checkInput(reading4) == GREEN){
+    lightup[0]= 1;
+  } else if (checkInput(reading4) == YELLOW){
+    lightup[1] = 1 ;
+  }else if (checkInput(reading4) == ORANGE){
+    lightup[2] = 1;
+  } else if (checkInput(reading4) == BLUE){
+    lightup[3] = 1;
+  } 
+
+    if (lightup[0] == 1){
+      digitalWrite(GREEN, HIGH);
+    } else {
+      digitalWrite(GREEN, LOW);
+    }
+    if (lightup[1] == 1) {
+      digitalWrite(YELLOW, HIGH);
+    } else {
+      digitalWrite(YELLOW, LOW);
+    }
+    if (lightup[2] == 1) {
+      digitalWrite(ORANGE, HIGH);
+    }  else {
+      digitalWrite(ORANGE, LOW);
+    }
+    if (lightup[3] == 1) {
+      digitalWrite(BLUE, HIGH);
+    } else {
+      digitalWrite(BLUE, LOW);
+    }  
 }
 
-bool isCorrectInput(int colour, int reading) {
-  if (colour == GREEN) {
-    return reading > 260 && reading < 270;
-  } else if (colour == YELLOW) {
-    return reading > 220 && reading < 230;
-  } else if (colour == ORANGE) {
-    return reading > 20 && reading < 30;
-  } else if (colour == BLUE) {
-    return reading > 35 && reading < 45;
+int checkInput(int reading) {
+
+  if (reading > 260 && reading < 270) {
+    return GREEN;
+  } else if (reading > 220 && reading < 230) {
+    return YELLOW;
+  } else if (reading > 20 && reading < 30) {
+    return ORANGE;
+  } else if (reading > 35 && reading < 45) {
+    return BLUE;
+  } else {
+    return 0;
   }
 }

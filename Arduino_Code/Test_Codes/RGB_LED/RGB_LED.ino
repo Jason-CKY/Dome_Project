@@ -13,15 +13,20 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  for(int i=0; i<255; i++){
-    RGB_write(i, 250, 255-i, COMMON_ANODE);
-    delay(20);
-  }
-  for (int i=0; i<255; i++){
-    RGB_write(255-i, 250, i, COMMON_ANODE);
-    delay(20);
-  }
-
+//  for(int i=0; i<255; i++){
+//    RGB_write(i, 250, 255-i, COMMON_ANODE);
+//    delay(20);
+//  }
+//  for (int i=0; i<255; i++){
+//    RGB_write(255-i, 250, i, COMMON_ANODE);
+//    delay(20);
+//  }
+  RGB_write(255, 0, 0, COMMON_ANODE);
+  delay(1000);
+  RGB_write(0, 255, 0, COMMON_ANODE);
+  delay(1000);
+  RGB_write(0, 0, 255, COMMON_ANODE);
+  delay(1000);
 }
 
 void RGB_write(int r, int g, int b, char mode){

@@ -17,6 +17,8 @@ void setup() {
   radio.openReadingPipe(0, address);
   radio.setPALevel(RF24_PA_MIN);
   radio.startListening();
+  pinMode(10, OUTPUT);
+  digitalWrite(10, LOW);
 }
 void loop() {
   if (radio.available()) {

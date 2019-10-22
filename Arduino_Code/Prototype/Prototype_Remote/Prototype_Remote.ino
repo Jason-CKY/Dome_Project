@@ -30,20 +30,28 @@ int currentAcc_Index = 0;
 
 /* vibration motor initialisation */
 #define VIBRATION_MOTOR     10
-#define VIBRATION_DURATION  500
+#define VIBRATION_DURATION  100
 unsigned long previousMillis = 0;
 int vibrationState = LOW;
 
 
 /* RGB LED setup */
 #define LED_R 3
-#define LED_G 5 
+#define LED_G 5
 #define LED_B 6
+#define COMMON_ANODE 'A'
+#define COMMON_CATHODE 'C'
 
 
 void setup() {
   Serial.begin(9600);
   pinMode(VIBRATION_MOTOR, OUTPUT);
+  /* RGB LED */
+  { 
+    pinMode(LED_R, OUTPUT);
+    pinMode(LED_G, OUTPUT);
+    pinMode(LED_B, OUTPUT);
+  }
   /* RF calibration */
   {
     radio.begin();
@@ -85,7 +93,7 @@ void setup() {
 }
 void loop() {
   /* Scanning for any received RF Message from mega */
-  if(radio.available()){
+  if (radio.available()) {
     char text[32] = "";
     radio.read(&text, sizeof(text));
     Serial.println(text);
@@ -103,10 +111,10 @@ void loop() {
     int averageIntensity = getMovingAverage(currentIntensity, averageAcc_Arr, &currentAcc_Index);
     double roll = atan(y / sqrt(pow(x, 2) + pow(z, 2))) * 180 / PI;         // rotation around X-Axis
     double pitch = atan(-1 * x / sqrt(pow(y, 2) + pow(z, 2))) * 180 / PI;   // rotation around Y-Axis
-//    Serial.print("Intensity: "); Serial.print(averageIntensity); Serial.print(" ");
-//    Serial.print("Roll: "); Serial.print(roll); Serial.print(" ");
-//    Serial.print("Pitch: "); Serial.print(pitch); Serial.print(" ");
-//    Serial.println();
+    Serial.print("Intensity: "); Serial.print(averageIntensity); Serial.print(" ");
+    Serial.print("Roll: "); Serial.print(roll); Serial.print(" ");
+    Serial.print("Pitch: "); Serial.print(pitch); Serial.print(" ");
+    Serial.println();
 
     x_prev = x;
     y_prev = y;
@@ -124,9 +132,10 @@ void loop() {
     previousMillis = millis();
   }
 
-  if(vibrationState == HIGH && millis() - previousMillis > VIBRATION_DURATION){
+  if (vibrationState == HIGH && millis() - previousMillis > VIBRATION_DURATION) {
     vibrationState = LOW;
   }
+  //  Serial.print(vibrationState);
   digitalWrite(VIBRATION_MOTOR, vibrationState);
 }
 
@@ -150,13 +159,29 @@ bool isShaking(int xDiff, int yDiff, int zDiff) {
 
 
 int getMovingAverage(int currentVal, int* averageArr, int* currentIndex) {
-  int len = sizeof(averageArr) / sizeof(averageArr[0]);
+  int len = SAMPLES;
   averageArr[currentAcc_Index] = currentVal;
   int sum = 0;
   for (int i = 0; i < len; i++) {
     sum += averageArr[i];
   }
   // update currentAcc_Index
+  //  Serial.println("****************************************************************");
+  //  Serial.print("size of averageArr: "); Serial.print(sizeof(averageArr)); Serial.print(" size of averageArr[0]"); Serial.println(sizeof(averageArr[0]));
+  //  Serial.print("len: "); Serial.print(len);  Serial.print(" Current Index = "); Serial.print(*currentIndex); Serial.print(" Sum: "); Serial.print(sum); Serial.print(" Moving ave: "); Serial.println(sum/len);
+  //  Serial.println("****************************************************************");
   *currentIndex = *currentIndex >= len ? 0 : *currentIndex + 1;
   return sum / len;
+}
+
+void RGB_write(int r, int g, int b, char mode) {
+  int rVal = (r < 0) ? 0 : (r > 255) ? 255 : r;
+  int gVal = (g < 0) ? 0 : (g > 255) ? 255 : g;
+  int bVal = (b < 0) ? 0 : (b > 255) ? 255 : b;
+  rVal = (mode == COMMON_ANODE) ? 255 - rVal : rVal;
+  gVal = (mode == COMMON_ANODE) ? 255 - gVal : gVal;
+  bVal = (mode == COMMON_ANODE) ? 255 - bVal : bVal;
+  analogWrite(LED_R, rVal);
+  analogWrite(LED_G, gVal);
+  analogWrite(LED_B, bVal);
 }
