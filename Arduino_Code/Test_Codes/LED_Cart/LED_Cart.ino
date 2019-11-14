@@ -5,6 +5,7 @@
 
 #define PIN 6
 #define NUMPIXELS 100
+#define NUMPLAYERS 4
 Adafruit_NeoPixel strip_cart = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 // neopixel animation without delay
@@ -31,9 +32,10 @@ uint16_t currentPixel = 0;// what pixel are we operating on
 */
 
 int inputs[4] = {A0, A1, A2, A3};
-int res_range[4][2] = { {400, 600}, {100, 190}, {191, 240}, {600, 740} };
+int res_range[4][2] = { {400, 600}, {230, 300}, {90, 120}, {150, 200} };
 int led_pos[4][2] = { {43, 48}, {49, 54}, {55, 61}, {62, 67} };
 uint32_t player_colors[4];
+int flags[4] = {0}; // 0 for not detected, 1 for detected
 
 void setup() {
   // put your setup code here, to run once:
@@ -46,7 +48,7 @@ void setup() {
 
   // detection setup
   Serial.begin(9600);
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < NUMPLAYERS; i++) {
     pinMode(inputs[i], INPUT_PULLUP);
   }
 
@@ -58,25 +60,40 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  clearArray(flags, NUMPLAYERS);
   if ((unsigned long)(millis() - rainbowPreviousMillis) >= pixelsInterval) {
     rainbowPreviousMillis = millis();
     rainbow(strip_cart);
   }
-  for (int i = 0; i < 4; i++) {
-    int reading = analogRead(inputs[i]);
-    bool gotPlayer = false;
-    for (int j = 0; i < 4; j++) {
-      if (reading > res_range[j][0] && reading < res_range[j][1]) {
-        gotPlayer = true;
-        for (int k = led_pos[i][0]; k <= led_pos[i][1]; k++) {
-          strip_cart.setPixelColor(k, player_colors[j]);
-          strip_cart.show();
+  for (int pos = 0; pos < NUMPLAYERS; pos++) {
+    int reading = analogRead(inputs[pos]);
+    // if(pos==0) Serial.println(reading);
+    for (int player = 0; player < NUMPLAYERS; player++) {
+      if (reading > res_range[player][0] && reading < res_range[player][1]) {
+        for (int k = led_pos[pos][0]; k <= led_pos[pos][1]; k++) {
+          strip_cart.setPixelColor(k, player_colors[player]);
         }
+        flags[player] = 1;
       }
     }
   }
+  strip_cart.show();
+  Serial.print("Detected Players: "); printArray(flags, NUMPLAYERS);
 }
 
+void printArray(int arr[], int _size) {
+  Serial.print("[");
+  for (int i = 0; i < _size - 1; i++) {
+    Serial.print(arr[i]); Serial.print(", ");
+  }
+  Serial.print(arr[_size - 1]); Serial.println("]");
+}
+
+void clearArray(int arr[], int _size) {
+  for (int i = 0; i < _size; i++) {
+    arr[i] = 0;
+  }
+}
 // Fill the dots one after the other with a color
 void colorWipe(uint32_t c, Adafruit_NeoPixel &pixels) {
   pixels.setPixelColor(currentPixel, c);
@@ -91,7 +108,7 @@ void rainbow(Adafruit_NeoPixel &pixels) {
   for (uint16_t i = 0; i < pixels.numPixels(); i++) {
     pixels.setPixelColor(i, Wheel((i + rainbowCycles) & 255, pixels));
   }
-  pixels.show();
+  //  pixels.show();
   rainbowCycles++;
   if (rainbowCycles >= 256) rainbowCycles = 0;
 }
