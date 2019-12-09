@@ -1,19 +1,28 @@
 #include <Button.h>
 
-Button button1(3); // Connect your button between pin 3 and GND
+Button button1(2); // Connect your button between pin 3 and GND
 
-
+unsigned long previousMillis = 0;
 void setup() {
-	button1.begin();
-	Serial.begin(9600);
+  button1.begin();
+  Serial.begin(9600);
+  pinMode(10, OUTPUT);
 }
 
 void loop() {
-	if (button1.read() == Button::PRESSED){
-		Serial.println("1");
-	}
-  else{
-    Serial.println("0");
+  int vibrationState;
+  if (button1.pressed()) {
+    vibrationState = 1;
+    previousMillis = millis();
   }
-  delay(50);
+  if (vibrationState == 1 && millis() - previousMillis >= 1000) {
+    vibrationState = 0;
+  }
+  Serial.println(vibrationState);
+  if (vibrationState == 1) {
+    digitalWrite(10, HIGH);
+  }else{
+    digitalWrite(10, LOW);
+  }
+
 }

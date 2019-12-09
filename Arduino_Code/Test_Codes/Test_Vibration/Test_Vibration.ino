@@ -14,16 +14,6 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-//  if(Serial.available() && Serial.read() == 'C'){
-//    //vibrateDuration(previousMillis, 2000, vibrationState);
-//    //digitalWrite(VIBRATION_MOTOR, HIGH);
-//    vibrationState = HIGH;
-//    previousMillis = millis();
-//    
-//  }
-//  if(vibrationState == HIGH && millis() - previousMillis > 500){
-//    vibrationState = LOW;
-//  }
 
   digitalWrite(VIBRATION_MOTOR, HIGH);
 }

@@ -31,6 +31,7 @@ void setup() {
 
 void loop () {
   currentAnimation = currentAnimation > 4? 0:currentAnimation;
+  currentAnimation = 1;
   if (currentAnimation == 0) {
     if ((unsigned long)(millis() - colorWipePreviousMillis) >= pixelsInterval) {
       colorWipePreviousMillis = millis();

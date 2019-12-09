@@ -19,7 +19,7 @@ void setup() {
   digitalWrite(10, LOW);
 }
 void loop() {
-  const char text[] = "Hello World";
+  const char text[] = "413";
   radio.write(&text, sizeof(text));
   delay(1000);
 }

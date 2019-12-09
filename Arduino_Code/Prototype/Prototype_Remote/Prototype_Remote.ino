@@ -30,10 +30,12 @@ int currentAcc_Index = 0;
 
 /* vibration motor initialisation */
 #define VIBRATION_MOTOR     10
-#define VIBRATION_DURATION  100
+#define VIBRATION_DURATION  500
 unsigned long previousMillis = 0;
+unsigned long rfPreviousMillis = 0;
+unsigned long clickDecayMillis = 0;
 int vibrationState = LOW;
-
+int clickSpeed = 0;
 
 /* RGB LED setup */
 #define LED_R 3
@@ -42,12 +44,13 @@ int vibrationState = LOW;
 #define COMMON_ANODE 'A'
 #define COMMON_CATHODE 'C'
 
-
+#define MAX_VIBRATION_VAL 1100
+#define CURRENT_PLAYER_NUM 2
 void setup() {
   Serial.begin(9600);
   pinMode(VIBRATION_MOTOR, OUTPUT);
   /* RGB LED */
-  { 
+  {
     pinMode(LED_R, OUTPUT);
     pinMode(LED_G, OUTPUT);
     pinMode(LED_B, OUTPUT);
@@ -56,8 +59,9 @@ void setup() {
   {
     radio.begin();
     radio.openWritingPipe(address);
-    radio.setPALevel(RF24_PA_MIN);
-    radio.startListening();
+    radio.setPALevel(RF24_PA_MAX);
+    radio.setChannel(100);
+    radio.stopListening();
     triggerButton_1.begin();
     triggerButton_2.begin();
   }
@@ -92,14 +96,9 @@ void setup() {
 
 }
 void loop() {
-  /* Scanning for any received RF Message from mega */
-  if (radio.available()) {
-    char text[32] = "";
-    radio.read(&text, sizeof(text));
-    Serial.println(text);
-    vibrationState = HIGH;
-    previousMillis = millis();
-  }
+  int currentIntensity, averageIntensity;
+  double roll, pitch;
+  
   /* Accelerator calculations */
   {
     adxl.readXYZ(&x, &y, &z); //read the accelerometer values and store them in variables  x,y,z
@@ -107,45 +106,100 @@ void loop() {
     int yDiff = y_prev - y; // finding change in y
     int zDiff = z_prev - z; // finding change in z
 
-    int currentIntensity = getShakingIntensity(xDiff, yDiff, zDiff);
-    int averageIntensity = getMovingAverage(currentIntensity, averageAcc_Arr, &currentAcc_Index);
-    double roll = atan(y / sqrt(pow(x, 2) + pow(z, 2))) * 180 / PI;         // rotation around X-Axis
-    double pitch = atan(-1 * x / sqrt(pow(y, 2) + pow(z, 2))) * 180 / PI;   // rotation around Y-Axis
-    Serial.print("Intensity: "); Serial.print(averageIntensity); Serial.print(" ");
-    Serial.print("Roll: "); Serial.print(roll); Serial.print(" ");
-    Serial.print("Pitch: "); Serial.print(pitch); Serial.print(" ");
-    Serial.println();
+    currentIntensity = getShakingIntensity(xDiff, yDiff, zDiff);
+    averageIntensity = getMovingAverage(currentIntensity, averageAcc_Arr, &currentAcc_Index);
+    Serial.print(averageIntensity); Serial.print("                    ");
+    averageIntensity = averageIntensity > MAX_VIBRATION_VAL ? MAX_VIBRATION_VAL : averageIntensity;
+    roll = atan(y / sqrt(pow(x, 2) + pow(z, 2))) * 180 / PI;         // rotation around X-Axis
+    pitch = atan(-1 * x / sqrt(pow(y, 2) + pow(z, 2))) * 180 / PI;   // rotation around Y-Axis
+    //    Serial.print("Intensity: "); Serial.print(averageIntensity); Serial.print(" ");
+    //    Serial.print("Roll: "); Serial.print(roll); Serial.print(" ");
+    //    Serial.print("Pitch: "); Serial.print(pitch); Serial.print(" ");
+    //    Serial.println();
 
     x_prev = x;
     y_prev = y;
     z_prev = z;
   }
+  int mappedIntensity = map(averageIntensity, 0, MAX_VIBRATION_VAL, 0, 9);
+  //  Serial.print("mapped value"); Serial.print(mappedIntensity);
+  //  Serial.println();
 
-  /* Send status of remote to the mega */
+  static bool startTimer = false;
+  static int isBtnPressed = 0;
+  static int checkSpeed;
   if (triggerButton_1.pressed()) {
-    radio.stopListening();
-    const char text[] = "Hello World";
-    radio.write(&text, sizeof(text));
-    radio.startListening();
-    Serial.print("Sending: "); Serial.println(text);
-    vibrationState = HIGH;
+    checkSpeed = millis() - previousMillis;
+    vibrationState = 1;
+    isBtnPressed = 1;
     previousMillis = millis();
+    if (checkSpeed < 240) {
+      clickSpeed = 9;
+    } else if (checkSpeed < 280) {
+      clickSpeed = 8;
+    } else if (checkSpeed < 380) {
+      clickSpeed = 7;
+    } else if (checkSpeed < 420) {
+      clickSpeed = 6;
+    } else if (checkSpeed < 460) {
+      clickSpeed = 5;
+    } else if (checkSpeed < 500) {
+      clickSpeed = 4;
+    } else if (checkSpeed < 600) {
+      clickSpeed = 3;
+    } else if (checkSpeed < 700) {
+      clickSpeed = 2;
+    } else {
+      clickSpeed = 1;
+    }
+  }
+  //  Serial.println(clickSpeed);
+  /* Send status of remote to the mega */
+  {
+    String text = "";
+    text += CURRENT_PLAYER_NUM;
+    text += clickSpeed;                // button state
+    text += mappedIntensity;
+    char sendText[3];
+    text.toCharArray(sendText, 4);
+    Serial.println(sendText);
+
+    if (millis() - rfPreviousMillis >= CURRENT_PLAYER_NUM * 3) {
+      radio.write(&sendText, sizeof(sendText));
+      rfPreviousMillis = millis();
+    }
   }
 
+  switch (CURRENT_PLAYER_NUM) {
+    case 1:
+      RGB_write(0, 0, 255, COMMON_ANODE);
+      break;
+    case 2:
+      RGB_write(255, 255, 0, COMMON_ANODE);
+      break;
+    case 3:
+      RGB_write(0, 255, 0, COMMON_ANODE);   // due to hardware issues, actual color is (255, 125, 0) instead
+      break;
+    case 4:
+      RGB_write(255, 0, 0, COMMON_ANODE);
+      break;
+  }
+
+  if (millis() - clickDecayMillis >= 100) {
+    clickDecayMillis = millis();
+    clickSpeed -= 1;
+    clickSpeed = clickSpeed < 0 ? 0 : clickSpeed;
+  }
   if (vibrationState == HIGH && millis() - previousMillis > VIBRATION_DURATION) {
-    vibrationState = LOW;
+    vibrationState = 0;
   }
-  //  Serial.print(vibrationState);
-  digitalWrite(VIBRATION_MOTOR, vibrationState);
-}
 
-//void sendRFMessage(char msg){
-//  radio.stopListening();
-//  radio.write(&msg, sizeof(msg));
-//  Serial.print("sent 0x"); Serial.print(msg, HEX);
-//  Serial.println();
-//  radio.startListening();
-//}
+  if (vibrationState == 1) {
+    digitalWrite(VIBRATION_MOTOR, HIGH);
+  } else {
+    digitalWrite(VIBRATION_MOTOR, LOW);
+  }
+}
 
 int getShakingIntensity(int xDiff, int yDiff, int zDiff) {
   int intensity = 0;
