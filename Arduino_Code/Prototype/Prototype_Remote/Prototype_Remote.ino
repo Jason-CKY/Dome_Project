@@ -178,7 +178,7 @@ void loop() {
       RGB_write(255, 255, 0, COMMON_ANODE);
       break;
     case 3:
-      RGB_write(0, 255, 0, COMMON_ANODE);   // due to hardware issues, actual color is (255, 125, 0) instead
+      RGB_write(0, 255, 0, COMMON_ANODE);   
       break;
     case 4:
       RGB_write(255, 0, 0, COMMON_ANODE);

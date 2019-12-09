@@ -51,10 +51,10 @@ void setup() {
     pinMode(inputs[i], INPUT_PULLUP);
   }
 
-  player_colors[0] = strip_cart.Color(0, 255, 0);
-  player_colors[1] = strip_cart.Color(255, 0, 0);
-  player_colors[2] = strip_cart.Color(0, 0, 255);
-  player_colors[3] = strip_cart.Color(255, 200, 0);
+  player_colors[0] = strip_cart.Color(0, 0, 255);
+  player_colors[1] = strip_cart.Color(255, 255, 0);
+  player_colors[2] = strip_cart.Color(0, 255, 0);
+  player_colors[3] = strip_cart.Color(255, 0, 0);
 
   radio.begin();
   radio.setChannel(100);
@@ -65,6 +65,8 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+
+  //  Serial.println(analogRead(A0));
   clearArray(flags, NUMPLAYERS, 1);
   if ((unsigned long)(millis() - theaterChasePreviousMillis) >= pixelsInterval) {
     theaterChasePreviousMillis = millis();
@@ -77,7 +79,6 @@ void loop() {
   }
   for (int pos = 0; pos < NUMPLAYERS; pos++) {
     int reading = analogRead(inputs[pos]);
-    // if(pos==0) Serial.println(reading);
     for (int player = 0; player < NUMPLAYERS; player++) {
       if (reading > res_range[player][0] && reading < res_range[player][1]) {
         for (int k = led_pos[pos][0]; k <= led_pos[pos][1]; k++) {
@@ -97,7 +98,6 @@ void loop() {
       id = (int)text[0] - 48;
       btnState[id - 1] = (int)text[1] - 48;
       shakeState[id - 1] = (int)text[2] - 48;
-      //      Serial.println(text);
     }
   }
   if (millis() - rfPreviousMillis >= 20) {
