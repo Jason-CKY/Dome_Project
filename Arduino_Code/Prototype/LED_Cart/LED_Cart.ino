@@ -14,14 +14,17 @@ int theaterChaseRainbowCycles = 0;
 int rainbowCycles = 0;
 int rainbowCycleCycles = 0;
 
-unsigned long theaterChasePreviousMillis = 0;
+unsigned long ledAnimationPreviousMillis = 0;
 unsigned long pixelsInterval = 10;
 unsigned long rfPreviousMillis = 0;
-uint16_t currentPixel = 0;// what pixel are we operating on
+uint16_t currentPixel = -2;// what pixel are we operating on
+uint16_t currentReversePixel = NUMPIXELS + 1;
+uint32_t animation_color;
 
 // green, red, blue, yellow
 int inputs[4] = {A0, A1, A2, A3};
-int res_range[4][2] = { {850, 950}, {480, 570}, {40, 120}, {670, 750} };
+//int res_range[4][2] = { {850, 950}, {480, 570}, {40, 120}, {670, 750} };
+int res_range[4][2] = {{40, 120} , {670, 750}, {850, 950}, {480, 570} };
 int led_pos[4][2] = { {42, 45}, {49, 52}, {56, 59}, {62, 65} };
 uint32_t player_colors[4];
 int flags[4] = {1, 1, 1, 1}; // 0 for not detected, 1 for detected
@@ -51,10 +54,11 @@ void setup() {
     pinMode(inputs[i], INPUT_PULLUP);
   }
 
-  player_colors[0] = strip_cart.Color(0, 0, 255);
-  player_colors[1] = strip_cart.Color(255, 255, 0);
-  player_colors[2] = strip_cart.Color(0, 255, 0);
-  player_colors[3] = strip_cart.Color(255, 0, 0);
+  player_colors[0] = strip_cart.Color(0, 0, 10);
+  player_colors[1] = strip_cart.Color(10, 10, 0);
+  player_colors[2] = strip_cart.Color(0, 10, 0);
+  player_colors[3] = strip_cart.Color(10, 0, 0);
+  animation_color = strip_cart.Color(10, 10, 10);  
 
   radio.begin();
   radio.setChannel(100);
@@ -68,14 +72,20 @@ void loop() {
 
   //  Serial.println(analogRead(A0));
   clearArray(flags, NUMPLAYERS, 1);
-  if ((unsigned long)(millis() - theaterChasePreviousMillis) >= pixelsInterval) {
-    theaterChasePreviousMillis = millis();
+  if ((unsigned long)(millis() - ledAnimationPreviousMillis) >= pixelsInterval) {
+    ledAnimationPreviousMillis = millis();
     strip_cart.setPixelColor(currentPixel, strip_cart.Color(0, 0, 0));
-    currentPixel ++;
+    strip_cart.setPixelColor(currentReversePixel, strip_cart.Color(0, 0, 0));
     for (int i = currentPixel; i < currentPixel + 3; i++) {
-      strip_cart.setPixelColor(i, strip_cart.Color(100, 100, 100));
+      if(i<NUMPIXELS && i>=0){strip_cart.setPixelColor(i, strip_cart.Color(5, 5, 5));}
     }
-    currentPixel = currentPixel >= NUMPIXELS ? 0 : currentPixel;
+    for(int i= currentReversePixel; i > currentReversePixel - 3; i--){
+      if(i<NUMPIXELS && i>=0){strip_cart.setPixelColor(i, animation_color);}
+    }
+    currentPixel ++;
+    currentReversePixel --;
+    currentPixel = currentPixel >= NUMPIXELS ? -2 : currentPixel;
+    currentReversePixel = currentReversePixel < 0 ? NUMPIXELS+1 : currentReversePixel;
   }
   for (int pos = 0; pos < NUMPLAYERS; pos++) {
     int reading = analogRead(inputs[pos]);
