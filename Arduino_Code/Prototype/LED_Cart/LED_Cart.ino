@@ -17,13 +17,12 @@ int rainbowCycleCycles = 0;
 unsigned long ledAnimationPreviousMillis = 0;
 unsigned long pixelsInterval = 10;
 unsigned long rfPreviousMillis = 0;
-uint16_t currentPixel = -2;// what pixel are we operating on
-uint16_t currentReversePixel = NUMPIXELS + 1;
+int currentPixel = 0;// what pixel are we operating on
+int currentReversePixel = NUMPIXELS - 1;
 uint32_t animation_color;
 
 // green, red, blue, yellow
 int inputs[4] = {A0, A1, A2, A3};
-//int res_range[4][2] = { {850, 950}, {480, 570}, {40, 120}, {670, 750} };
 int res_range[4][2] = {{40, 120} , {670, 750}, {850, 950}, {480, 570} };
 int led_pos[4][2] = { {42, 45}, {49, 52}, {56, 59}, {62, 65} };
 uint32_t player_colors[4];
@@ -54,11 +53,11 @@ void setup() {
     pinMode(inputs[i], INPUT_PULLUP);
   }
 
-  player_colors[0] = strip_cart.Color(0, 0, 10);
-  player_colors[1] = strip_cart.Color(10, 10, 0);
-  player_colors[2] = strip_cart.Color(0, 10, 0);
-  player_colors[3] = strip_cart.Color(10, 0, 0);
-  animation_color = strip_cart.Color(10, 10, 10);  
+  player_colors[0] = strip_cart.Color(0, 0, 100);
+  player_colors[1] = strip_cart.Color(100, 100, 0);
+  player_colors[2] = strip_cart.Color(0, 100, 0);
+  player_colors[3] = strip_cart.Color(100, 0, 0);
+  animation_color = strip_cart.Color(100, 100, 100);
 
   radio.begin();
   radio.setChannel(100);
@@ -76,16 +75,17 @@ void loop() {
     ledAnimationPreviousMillis = millis();
     strip_cart.setPixelColor(currentPixel, strip_cart.Color(0, 0, 0));
     strip_cart.setPixelColor(currentReversePixel, strip_cart.Color(0, 0, 0));
-    for (int i = currentPixel; i < currentPixel + 3; i++) {
-      if(i<NUMPIXELS && i>=0){strip_cart.setPixelColor(i, strip_cart.Color(5, 5, 5));}
-    }
-    for(int i= currentReversePixel; i > currentReversePixel - 3; i--){
-      if(i<NUMPIXELS && i>=0){strip_cart.setPixelColor(i, animation_color);}
-    }
     currentPixel ++;
     currentReversePixel --;
-    currentPixel = currentPixel >= NUMPIXELS ? -2 : currentPixel;
-    currentReversePixel = currentReversePixel < 0 ? NUMPIXELS+1 : currentReversePixel;
+    for (int i = currentPixel; i < currentPixel + 3; i++) {
+        strip_cart.setPixelColor(i, strip_cart.Color(100, 100, 100));
+    }
+    for (int j = currentReversePixel; j > currentReversePixel - 3; j--) {
+        strip_cart.setPixelColor(j, strip_cart.Color(100, 100, 100));
+    }
+  
+    currentPixel = currentPixel >= NUMPIXELS ? 0 : currentPixel;
+    currentReversePixel = currentReversePixel < 0 ? NUMPIXELS - 1 : currentReversePixel;
   }
   for (int pos = 0; pos < NUMPLAYERS; pos++) {
     int reading = analogRead(inputs[pos]);
@@ -103,7 +103,7 @@ void loop() {
   if (radio.available()) {
     char text[32] = "";
     radio.read(&text, sizeof(text));
-//    Serial.println(text);
+    //    Serial.println(text);
     if (text[0] == '1' || text[0] == '2' || text[0] == '3' || text[0] == '4') {
       id = (int)text[0] - 48;
       btnState[id - 1] = (int)text[1] - 48;
