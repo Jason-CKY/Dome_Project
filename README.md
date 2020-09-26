@@ -13,6 +13,7 @@ Contributors to this project:
 
 ## About
 ![Alt text](./Images/Icons/Architecture.png)
+
 The project objective is to create an immersive and interactive experience using projection onto a dome ceiling.
 It uses unity to animate and display images onto the dome. A Raspberry Pi is used as an intermediary for I/O interactions
 to peripherals like LED strips and various sensors and buttons to add more interactivity to the dome experience.
